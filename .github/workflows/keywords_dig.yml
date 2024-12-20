@@ -1,0 +1,49 @@
+name: Keywords Dig Daily
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # UTC时间5点 (北京时间13点)
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  run-keywords-dig:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright requests openpyxl
+        playwright install chromium
+        playwright install-deps
+        
+    - name: Run keywords dig script
+      env:
+        FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+        FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+        FEISHU_APP_TOKEN: ${{ secrets.FEISHU_APP_TOKEN }}
+        SEMRUSH_USERNAME: ${{ secrets.SEMRUSH_USERNAME }}
+        SEMRUSH_PASSWORD: ${{ secrets.SEMRUSH_PASSWORD }}
+      run: python keywords_dig_scheduler.py
+      
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: keywords-dig-logs
+        path: ~/logs/keywords_dig/
+        
+    - name: Upload results
+      if: success()
+      uses: actions/upload-artifact@v2
+      with:
+        name: keywords-dig-results
+        path: ~/Downloads/竞品监控_*
